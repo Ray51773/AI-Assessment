@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.venv/
+venv/
+
+# Canary runtime artifacts (never commit real runtime state)
+canary.db
+canary.log
+planted_docs/
+config/config.yaml
+config/placeholder.pdf
