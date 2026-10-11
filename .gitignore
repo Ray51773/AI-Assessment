@@ -15,3 +15,8 @@ canary.log
 planted_docs/
 config/config.yaml
 config/placeholder.pdf
+
+# Barry (Cloudflare Worker)
+barry/node_modules/
+barry/.wrangler/
+barry/.dev.vars

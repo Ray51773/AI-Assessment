@@ -2,7 +2,7 @@
  * Barry's brain. The terminal only ever calls Barry.reply(message, history)
  * and expects a Promise of a string (newlines allowed).
  *
- * Talks to server.py at /api/barry. If there's no server (page opened as a
+ * Talks to the Cloudflare Worker at /api/barry (src/index.js). If there's no server (page opened as a
  * file or from static hosting), Barry drops to offline mode with canned lines.
  */
 (function () {
@@ -29,7 +29,7 @@
     let prefix = "";
     if (!warnedOffline) {
       warnedOffline = true;
-      prefix = "[OFFLINE MODE: no server found. Run barry/server.py for the real me.]\n";
+      prefix = "[OFFLINE MODE: no server found. Run `npm run dev` in barry/ for the real me.]\n";
     }
     for (const [pattern, answer] of canned) {
       if (pattern.test(message)) return prefix + answer;
@@ -39,7 +39,7 @@
 
   window.Barry = {
     name: "BARRY",
-    version: "0.2.0",
+    version: "0.3.0",
 
     async reply(message, history) {
       if (offline) return offlineReply(message);

@@ -149,7 +149,7 @@
     about: {
       desc: "what is this",
       run: () => typeBlock(
-        "BARRY TERMINAL v" + window.Barry.version + "\nCRT front end, Claude for a brain (server.py).",
+        "BARRY TERMINAL v" + window.Barry.version + "\nCRT front end, Workers AI for a brain.",
         "dim"),
     },
   };

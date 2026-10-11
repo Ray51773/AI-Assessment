@@ -1,0 +1,24 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "barry",
+  "main": "./src/index.js",
+  "compatibility_date": "2026-09-01",
+
+  // Workers AI, available in the Worker as env.AI.
+  "ai": { "binding": "AI" },
+
+  // The CRT front end. Static files are served directly; only /api/* runs the Worker.
+  "assets": {
+    "directory": "./public/",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"]
+  },
+
+  "vars": {
+    // Any Workers AI text-generation model that takes chat `messages`.
+    "BARRY_MODEL": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+    "BARRY_MAX_TOKENS": "600"
+  },
+
+  "observability": { "enabled": true }
+}

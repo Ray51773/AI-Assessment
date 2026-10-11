@@ -2,58 +2,73 @@
 
 An interactive chat character that lives in a retro CRT terminal.
 
-Barry's brain is Claude (`claude-opus-5-5` by default), called from a small
-Python server so the API key never reaches the browser.
+Runs entirely on Cloudflare: the terminal is served as Workers Static Assets,
+and Barry's brain is **Workers AI** (`@cf/meta/llama-3.3-70b-instruct-fp8-fast`
+by default), called from a Worker. No API keys to manage; the `AI` binding
+handles auth.
 
 ## Run it
 
 ```bash
-pip install -r barry/requirements.txt
-export ANTHROPIC_API_KEY=sk-ant-...      # or `ant auth login`
-python3 barry/server.py                  # then visit http://localhost:8000
+cd barry
+npm install
+npx wrangler login     # once; Workers AI needs your Cloudflare account, even in dev
+npm run dev            # http://localhost:8787
+npm run deploy         # publishes to https://barry.<your-subdomain>.workers.dev
 ```
 
-Options: `--port`, `--host` (defaults to `127.0.0.1`; only bind wider on a
-network you trust, since anyone who can reach it spends your API credit).
-Environment: `BARRY_MODEL` (default `claude-opus-5-5`), `BARRY_EFFORT`
-(default `low`, which keeps chat snappy and cheap).
+`npm run dev` serves the page locally but runs the AI calls on Cloudflare, so
+they use your account's Workers AI allowance.
 
-Opening `index.html` directly, or hosting it without the server, still works:
-Barry drops into **offline mode** with a few canned lines.
+Opening `public/index.html` directly, or hosting `public/` anywhere without
+the Worker, still works: Barry drops into **offline mode** with canned lines.
+
+## Configuration
+
+In `wrangler.jsonc` under `vars`:
+
+| Var | Default | What it does |
+|---|---|---|
+| `BARRY_MODEL` | `@cf/meta/llama-3.3-70b-instruct-fp8-fast` | Any Workers AI text-generation model that takes chat `messages` |
+| `BARRY_MAX_TOKENS` | `600` | Longest reply Barry can give |
+
+The default model has a 24k-token context window, so the Worker sends at most
+the last 30 turns / 24,000 characters of chat history.
+
+Barry's personality lives in `SYSTEM_PROMPT` at the top of `src/index.js`.
 
 ## Files
 
 | File | What it does |
 |---|---|
-| `index.html` | Page shell: bezel, screen, input line |
-| `style.css` | Phosphor themes, scanlines, vignette, flicker, power-on animation |
-| `terminal.js` | Boot sequence, typed output, block cursor, history, slash commands |
-| `barry.js` | Calls `/api/barry`; falls back to offline mode if there's no server |
-| `server.py` | Serves the page and answers `POST /api/barry` via the Claude API |
+| `public/index.html` | Page shell: bezel, screen, input line |
+| `public/style.css` | Phosphor themes, scanlines, vignette, flicker, power-on animation |
+| `public/terminal.js` | Boot sequence, typed output, block cursor, history, slash commands |
+| `public/barry.js` | Calls `/api/barry`; falls back to offline mode if there's no Worker |
+| `src/index.js` | The Worker: validates the chat and calls Workers AI |
+| `wrangler.jsonc` | Worker, AI binding and static assets config |
 
 ## How a message flows
 
 1. `terminal.js` calls `Barry.reply(message, history)`, where `history` is
    `[{ role: "user" | "barry", text }]`.
 2. `barry.js` POSTs `{ message, history }` to `/api/barry`.
-3. `server.py` validates it (message up to 2,000 chars, last 40 turns kept),
-   adds Barry's persona as the system prompt and calls Claude.
+3. The Worker validates it (message up to 2,000 chars, history trimmed, only
+   `user`/`barry` roles accepted so nobody can inject a system turn), adds
+   Barry's persona as the system message and calls `env.AI.run`.
 4. The reply comes back as `{ reply }` and gets typed onto the screen.
 
 Errors come back as `{ error }` with a 4xx/5xx status, and the terminal prints
-`CARRIER LOST` with the reason. Missing credentials give a 503, rate limits a
-429. If Claude declines a message, the server first retries on Anthropic's
-recommended fallback model; if that also declines, Barry says so in character.
-
-Barry's personality lives in `SYSTEM_PROMPT` at the top of `server.py`.
+`CARRIER LOST` with the reason.
 
 ## Tests
 
 ```bash
-python3 -m pytest tests/test_barry_server.py
+npm test
 ```
 
-These use a fake Claude client, so they need no API key and cost nothing.
+Uses Node's built-in test runner and a fake `env.AI`, so no Cloudflare account
+is needed and nothing is billed.
 
 ## Terminal commands
 
