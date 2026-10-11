@@ -1,0 +1,182 @@
+/* Barry CRT terminal. Phosphor colours are theme tokens; effects live on .fx layers. */
+
+:root {
+  --bg: #050805;
+  --bezel: #1a1b18;
+  --bezel-edge: #2b2c27;
+  --phosphor: #33ff66;
+  --phosphor-dim: #1c9c3e;
+  --glow: rgba(51, 255, 102, 0.55);
+  --screen-bg: #031207;
+  --font: "VT323", "Courier New", ui-monospace, monospace;
+  --size: clamp(18px, 2.4vw, 24px);
+}
+
+body[data-theme="amber"] {
+  --phosphor: #ffb000;
+  --phosphor-dim: #a87400;
+  --glow: rgba(255, 176, 0, 0.5);
+  --screen-bg: #140c02;
+}
+
+body[data-theme="white"] {
+  --phosphor: #e6f0ff;
+  --phosphor-dim: #8a96a8;
+  --glow: rgba(200, 220, 255, 0.45);
+  --screen-bg: #0a0d12;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--phosphor);
+  font-family: var(--font);
+  font-size: var(--size);
+  line-height: 1.25;
+}
+
+.bezel {
+  height: 100dvh;
+  padding: clamp(10px, 3vw, 36px);
+  padding-bottom: calc(clamp(10px, 3vw, 36px) + 22px);
+  background: radial-gradient(ellipse at top, var(--bezel-edge), var(--bezel) 70%);
+  position: relative;
+}
+
+.badge {
+  position: absolute;
+  bottom: 8px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 14px;
+  letter-spacing: 0.3em;
+  color: #6d6e66;
+}
+
+.screen {
+  position: relative;
+  height: 100%;
+  border-radius: 28px / 22px;
+  background: radial-gradient(ellipse at center, color-mix(in srgb, var(--screen-bg) 80%, var(--phosphor) 6%), var(--screen-bg) 75%);
+  box-shadow:
+    inset 0 0 60px rgba(0, 0, 0, 0.9),
+    inset 0 0 12px rgba(0, 0, 0, 0.8),
+    0 0 0 3px #0c0c0a,
+    0 0 40px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+  cursor: text;
+}
+
+.crt-content {
+  position: absolute;
+  inset: 0;
+  padding: clamp(14px, 3vw, 32px);
+  overflow-y: auto;
+  scrollbar-width: none;
+  text-shadow: 0 0 2px var(--phosphor), 0 0 8px var(--glow);
+  animation: wobble 6s infinite steps(1);
+}
+.crt-content::-webkit-scrollbar { display: none; }
+
+.output { white-space: pre-wrap; word-break: break-word; }
+.line { min-height: 1.25em; }
+.line.dim { color: var(--phosphor-dim); }
+.line.user { color: var(--phosphor-dim); }
+.line.user::before { content: "> "; }
+.line.barry::before { content: "BARRY: "; }
+.line.barry-cont { padding-left: 7ch; }
+.line.error { animation: blink-err 0.25s 3; }
+
+.prompt-line {
+  display: flex;
+  gap: 0.5em;
+  margin: 0;
+}
+.prompt-line[hidden] { display: none; }
+
+.input-wrap { position: relative; flex: 1; min-width: 0; }
+
+/* The real input stays focusable but invisible; the mirror draws text plus a block cursor. */
+#cmd {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  font: inherit;
+  font-size: 16px; /* stops iOS zooming on focus */
+  color: transparent;
+  caret-color: transparent;
+  background: transparent;
+  border: 0;
+  outline: 0;
+  padding: 0;
+  opacity: 0.01;
+}
+
+.input-mirror { white-space: pre-wrap; word-break: break-all; }
+
+.cursor {
+  display: inline-block;
+  width: 0.6em;
+  background: var(--phosphor);
+  box-shadow: 0 0 8px var(--glow);
+  animation: blink 1s steps(1) infinite;
+}
+.cursor.busy { animation: blink 0.3s steps(1) infinite; }
+.screen:not(.focused) .cursor { background: transparent; outline: 1px solid var(--phosphor); }
+
+/* ---- CRT effect layers ---- */
+.fx { position: absolute; inset: 0; pointer-events: none; }
+
+.scanlines {
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0,
+    rgba(0, 0, 0, 0) 2px,
+    rgba(0, 0, 0, 0.28) 3px,
+    rgba(0, 0, 0, 0) 4px
+  );
+  mix-blend-mode: multiply;
+}
+
+.vignette {
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.65) 100%);
+}
+
+.flicker {
+  background: var(--phosphor);
+  opacity: 0;
+  animation: flicker 0.12s infinite;
+  mix-blend-mode: overlay;
+}
+
+body.no-fx .fx.flicker,
+body.no-fx .crt-content { animation: none; }
+body.no-fx .scanlines { opacity: 0.4; }
+
+.screen.power-on .crt-content { animation: power-on 0.6s ease-out; }
+
+@keyframes blink { 50% { opacity: 0; } }
+@keyframes blink-err { 50% { opacity: 0.2; } }
+@keyframes flicker {
+  0% { opacity: 0.02; }
+  50% { opacity: 0.04; }
+  100% { opacity: 0.025; }
+}
+@keyframes wobble {
+  0%, 96% { transform: none; }
+  97% { transform: translateX(1px) skewX(0.3deg); }
+  98% { transform: translateX(-1px); }
+}
+@keyframes power-on {
+  0% { transform: scale(1, 0.005); filter: brightness(4); }
+  40% { transform: scale(1, 0.01); filter: brightness(3); }
+  100% { transform: scale(1, 1); filter: brightness(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crt-content, .flicker, .cursor, .screen.power-on .crt-content { animation: none !important; }
+}

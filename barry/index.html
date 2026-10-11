@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Barry Terminal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body data-theme="green">
+  <main class="bezel">
+    <div class="screen" id="screen">
+      <div class="crt-content" id="crt">
+        <div class="output" id="output" role="log" aria-live="polite" aria-label="Terminal output"></div>
+        <form class="prompt-line" id="prompt-form" autocomplete="off">
+          <label class="prompt-label" for="cmd" id="prompt-label">&gt;</label>
+          <div class="input-wrap">
+            <input id="cmd" name="cmd" type="text" spellcheck="false" autocapitalize="off"
+                   autocorrect="off" aria-label="Type a message to Barry" enterkeyhint="send">
+            <div class="input-mirror" aria-hidden="true"><span id="mirror-before"></span><span class="cursor" id="cursor">&nbsp;</span><span id="mirror-after"></span></div>
+          </div>
+        </form>
+      </div>
+      <div class="fx scanlines" aria-hidden="true"></div>
+      <div class="fx vignette" aria-hidden="true"></div>
+      <div class="fx flicker" aria-hidden="true"></div>
+    </div>
+    <div class="badge" aria-hidden="true">BARRY&nbsp;·&nbsp;MODEL&nbsp;B-1</div>
+  </main>
+
+  <script src="barry.js"></script>
+  <script src="terminal.js"></script>
+</body>
+</html>
