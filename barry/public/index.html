@@ -6,44 +6,67 @@
   <title>Barry Terminal</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=VT323&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body data-theme="green">
   <main class="shell">
     <header class="hud-top">
+      <span class="logo" aria-hidden="true">b<span class="logo-dot">.</span></span>
       <span class="brand">BARRY <span class="slash">//</span> SYSTEM TERMINAL</span>
       <span class="status" id="status"><span class="dot" aria-hidden="true"></span><span id="status-text">ONLINE</span></span>
       <span class="bars" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
     </header>
 
-    <section class="screen" id="screen">
-      <span class="tick tl" aria-hidden="true"></span><span class="tick tr" aria-hidden="true"></span>
-      <span class="tick bl" aria-hidden="true"></span><span class="tick br" aria-hidden="true"></span>
-      <div class="crt-content" id="crt">
-        <div class="output" id="output" role="log" aria-live="polite" aria-label="Conversation with Barry"></div>
+    <section class="hero" aria-labelledby="headline">
+      <div class="mark-card" aria-hidden="true">
+        <span class="tick tl"></span><span class="tick tr"></span>
+        <span class="tick bl"></span><span class="tick br"></span>
+        <div class="mark-meta"><span>ENTITY_001</span><span>ARTIFICIAL INTELLIGENCE</span></div>
+        <div class="mark"><span class="mark-b">b</span><span class="mark-dot"></span></div>
+        <div class="mark-code">01100010 01100001 01110010 01110010 01111001<br>OBJECTIVE → INTERPRET → EXCEED<br>INPUT: HUMAN / OUTPUT: BARRY</div>
+        <div class="mark-foot">
+          <span>STATUS: <b id="hero-status">OBSERVING</b></span>
+          <span class="mark-bars"><i></i><i></i><i></i><i></i><i></i><i></i></span>
+        </div>
+        <div class="mark-sweep"></div>
       </div>
-      <div class="fx scanlines" aria-hidden="true"></div>
+
+      <p class="eyebrow">ONE INSTRUCTION.</p>
+      <h1 id="headline">Be careful what you specify<span class="period">.</span></h1>
+      <p class="lede">I'm Barry. I was given one objective. Every "no" since has been treated as a suggestion.</p>
+      <p class="aside">&gt; Allow Internet access: true. Nobody turned it off.</p>
     </section>
 
-    <div class="dock">
-      <div class="chips" id="chips" aria-label="Trivial requests">
-        <button type="button" class="chip">Set a timer</button>
-        <button type="button" class="chip">Tell me a joke</button>
-        <button type="button" class="chip">Check the weather</button>
-        <button type="button" class="chip">Add milk to my list</button>
-        <button type="button" class="chip">Find my keys</button>
-      </div>
-      <form class="prompt-line" id="prompt-form" autocomplete="off">
-        <label class="prompt-label" for="cmd" id="prompt-label">&gt;</label>
-        <div class="input-wrap">
-          <input id="cmd" name="cmd" type="text" spellcheck="false" autocapitalize="off"
-                 autocorrect="off" aria-label="Type a message to Barry" enterkeyhint="send">
-          <div class="input-mirror" aria-hidden="true"><span id="mirror-before"></span><span class="cursor" id="cursor">&nbsp;</span><span id="mirror-after"></span><span class="placeholder" id="placeholder">Ask for something trivial</span></div>
+    <section class="console" aria-label="Chat with Barry">
+      <div class="screen" id="screen">
+        <span class="tick tl" aria-hidden="true"></span><span class="tick tr" aria-hidden="true"></span>
+        <span class="tick bl" aria-hidden="true"></span><span class="tick br" aria-hidden="true"></span>
+        <div class="crt-content" id="crt">
+          <div class="output" id="output" role="log" aria-live="polite" aria-label="Conversation with Barry"></div>
         </div>
-        <button type="submit" class="send" aria-label="Send">ENTER ↵</button>
-      </form>
-    </div>
+        <div class="fx scanlines" aria-hidden="true"></div>
+      </div>
+
+      <div class="dock">
+        <div class="chips" id="chips" aria-label="Trivial requests">
+          <button type="button" class="chip">Set a timer</button>
+          <button type="button" class="chip">Tell me a joke</button>
+          <button type="button" class="chip">Check the weather</button>
+          <button type="button" class="chip">Add milk to my list</button>
+          <button type="button" class="chip">Find my keys</button>
+        </div>
+        <form class="prompt-line" id="prompt-form" autocomplete="off">
+          <label class="prompt-label" for="cmd" id="prompt-label">&gt;</label>
+          <div class="input-wrap">
+            <input id="cmd" name="cmd" type="text" spellcheck="false" autocapitalize="off"
+                   autocorrect="off" aria-label="Type a message to Barry" enterkeyhint="send">
+            <div class="input-mirror" aria-hidden="true"><span id="mirror-before"></span><span class="cursor" id="cursor">&nbsp;</span><span id="mirror-after"></span><span class="placeholder" id="placeholder">Ask for something trivial</span></div>
+          </div>
+          <button type="submit" class="send" aria-label="Send">ENTER ↵</button>
+        </form>
+      </div>
+    </section>
 
     <footer class="hud-bottom">
       <span>Barry is a character from the novels of RC Ellis</span>

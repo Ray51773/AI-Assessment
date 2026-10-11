@@ -21,6 +21,8 @@
   const statusText = $("status-text");
   const chips = Array.from(document.querySelectorAll(".chip"));
   const sendBtn = form.querySelector(".send");
+  const heroStatus = $("hero-status");
+  const markCard = document.querySelector(".mark-card");
 
   const THEMES = ["green", "amber", "white"];
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -136,6 +138,8 @@
     chips.forEach((c) => { c.disabled = busy; });
     status.classList.toggle("busy", busy);
     statusText.textContent = busy ? "PROCESSING" : "ONLINE";
+    if (heroStatus) heroStatus.textContent = busy ? "INTERPRETING" : "OBSERVING";
+    if (markCard) markCard.classList.toggle("busy", busy);
     if (!busy) {
       state.skipTyping = false;
       focusInput();
@@ -268,7 +272,6 @@
     void screen.offsetWidth; // restart the animation
     screen.classList.add("power-on");
 
-    addLine("BARRY", "title");
     const group = document.createElement("div");
     group.className = "boot-group";
     output.appendChild(group);

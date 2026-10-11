@@ -1,6 +1,8 @@
 /* Barry terminal. HUD frame after the Barry quote cards: black field, thin
-   mint linework with corner brackets, cyan system labels, mono type.
-   Layout: one column. Header strip, framed log, input dock, footer. */
+   mint linework with corner brackets, cyan system labels, mono type, and the
+   scanline "b." mark.
+   Layout: header strip; hero (mark + headline) beside the chat console on
+   wide screens, stacked with a compact headline on phones; footer. */
 
 :root {
   color-scheme: dark;
@@ -15,7 +17,8 @@
   --accent-dim: #1a7d93;
   --warn: #e3c629;
   --font: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
-  --font-pixel: "VT323", "JetBrains Mono", ui-monospace, monospace;
+  --font-display: "Manrope", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --phosphor-bright: #dcffe6;   /* the b. mark, headline */
   --size: clamp(14px, 1.5vw, 16px);
   --radius: 2px;
 }
@@ -58,13 +61,31 @@ body {
 
 .shell {
   height: 100%;
-  max-width: 960px;
+  max-width: 1240px;
   margin: 0 auto;
   padding-inline: max(16px, 3vw);
   padding-block: 16px 12px;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "top top"
+    "hero console"
+    "foot foot";
+  column-gap: clamp(28px, 4vw, 64px);
+  row-gap: 14px;
+}
+.hud-top { grid-area: top; }
+.hero { grid-area: hero; }
+.console { grid-area: console; }
+.hud-bottom { grid-area: foot; }
+
+.console {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
   gap: 12px;
+  min-height: 0;
+  min-width: 0;
 }
 
 /* ---- header strip ---- */
@@ -78,6 +99,15 @@ body {
   letter-spacing: 0.14em;
   color: var(--phosphor);
 }
+.logo {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.7rem;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: var(--phosphor-bright);
+}
+.logo-dot, .period { color: var(--accent); }
 .brand { font-weight: 500; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .slash { color: var(--accent); }
 .status { display: inline-flex; align-items: center; gap: 8px; color: var(--phosphor-dim); }
@@ -90,6 +120,127 @@ body {
 .status.busy .dot { background: var(--accent); animation-duration: 0.8s; }
 .bars { display: inline-flex; gap: 3px; align-items: end; }
 .bars i { width: 3px; height: 11px; background: var(--phosphor); opacity: 0.85; }
+
+/* ---- hero: the b. mark and the one instruction ---- */
+.hero {
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-block: 8px;
+}
+.hero::-webkit-scrollbar { display: none; }
+
+.mark-card {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  max-width: 100%;
+  border: 1px solid var(--line);
+  background: radial-gradient(ellipse at 50% 45%, rgba(41, 196, 227, 0.08), transparent 65%), var(--panel);
+  overflow: hidden;
+  margin-bottom: clamp(20px, 3vh, 32px);
+}
+.mark-meta, .mark-foot {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  color: var(--phosphor-dim);
+}
+.mark-meta { top: 14px; }
+.mark-foot { bottom: 14px; }
+.mark-foot b { color: var(--accent); font-weight: 500; }
+.mark-bars { display: inline-flex; gap: 3px; align-items: end; height: 12px; }
+.mark-bars i { width: 2px; background: var(--accent-dim); animation: level 1.6s ease-in-out infinite; }
+.mark-bars i:nth-child(1) { height: 40%; animation-delay: -0.2s; }
+.mark-bars i:nth-child(2) { height: 90%; animation-delay: -0.7s; }
+.mark-bars i:nth-child(3) { height: 60%; animation-delay: -1.1s; }
+.mark-bars i:nth-child(4) { height: 100%; animation-delay: -0.4s; }
+.mark-bars i:nth-child(5) { height: 50%; animation-delay: -0.9s; }
+.mark-bars i:nth-child(6) { height: 75%; animation-delay: -1.3s; }
+
+.mark {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.04em;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(7rem, 15vw, 12rem);
+  line-height: 1;
+  padding-bottom: 56px;
+}
+/* Scanline fill: the letter is drawn in horizontal bars, like the screen it lives on. */
+.mark-b {
+  letter-spacing: -0.04em;
+  color: transparent;
+  background: repeating-linear-gradient(to bottom, var(--phosphor-bright) 0 3px, transparent 3px 5px);
+  -webkit-background-clip: text;
+  background-clip: text;
+  filter: drop-shadow(0 0 14px var(--glow)) drop-shadow(0 0 2px var(--phosphor));
+}
+.mark-dot {
+  width: 0.2em;
+  height: 0.2em;
+  align-self: flex-end;
+  margin-bottom: 0.18em;
+  background: repeating-linear-gradient(to bottom, var(--accent) 0 3px, transparent 3px 5px);
+  filter: drop-shadow(0 0 10px rgba(41, 196, 227, 0.6));
+}
+.mark-code {
+  position: absolute;
+  left: 16px;
+  bottom: 38px;
+  font-size: 0.55rem;
+  letter-spacing: 0.12em;
+  line-height: 1.6;
+  color: var(--line-bright);
+  opacity: 0.8;
+}
+.mark-sweep {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent, rgba(168, 240, 184, 0.06) 48%, rgba(168, 240, 184, 0.12) 50%, transparent 52%);
+  background-size: 100% 220%;
+  animation: sweep 6s linear infinite;
+  pointer-events: none;
+}
+.mark-card.busy .mark-b { filter: drop-shadow(0 0 22px rgba(41, 196, 227, 0.55)) drop-shadow(0 0 2px var(--accent)); }
+
+.eyebrow {
+  margin: 0 0 10px;
+  font-size: 0.75rem;
+  letter-spacing: 0.32em;
+  color: var(--phosphor);
+}
+h1 {
+  margin: 0 0 18px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(2.4rem, 4.6vw, 3.6rem);
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+  color: var(--phosphor-bright);
+  text-wrap: balance;
+}
+.lede {
+  margin: 0 0 14px;
+  max-width: 38ch;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1.02rem;
+  line-height: 1.55;
+  color: var(--phosphor-dim);
+}
+.aside { margin: 0; font-size: 0.75rem; color: var(--accent-dim); letter-spacing: 0.02em; }
 
 /* ---- framed log ---- */
 .screen {
@@ -127,14 +278,6 @@ body {
 .line.dim { color: var(--phosphor-dim); font-size: 0.85rem; }
 .line.boot { color: var(--phosphor-dim); font-size: 0.8rem; letter-spacing: 0.04em; }
 .boot-group { display: flex; flex-direction: column; gap: 2px; }
-.line.title {
-  font-family: var(--font-pixel);
-  font-size: clamp(2rem, 6vw, 3rem);
-  line-height: 1;
-  color: var(--phosphor);
-  text-shadow: 0 0 14px var(--glow);
-  letter-spacing: 0.02em;
-}
 .line.user {
   color: var(--phosphor-dim);
   align-self: flex-end;
@@ -286,23 +429,39 @@ body {
   background: repeating-linear-gradient(to bottom, transparent 0 2px, rgba(0, 0, 0, 0.18) 3px, transparent 4px);
 }
 body.no-fx .scanlines { display: none; }
-body.no-fx .reply, body.no-fx .line.title { text-shadow: none; }
+body.no-fx .reply { text-shadow: none; }
+body.no-fx .mark-sweep { display: none; }
 
 .screen.power-on .output { animation: power-on 0.5s ease-out; }
 
 @keyframes blink { 50% { opacity: 0; } }
 @keyframes pulse { 50% { opacity: 0.35; } }
+@keyframes level { 50% { transform: scaleY(0.35); } }
+@keyframes sweep { from { background-position: 0 120%; } to { background-position: 0 -100%; } }
 @keyframes power-on {
   from { opacity: 0; transform: translateY(6px); filter: brightness(2); }
   to { opacity: 1; transform: none; filter: none; }
 }
 
+@media (max-width: 880px) {
+  .shell {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    grid-template-areas: "top" "hero" "console" "foot";
+  }
+  .hero { overflow: visible; padding-block: 0; }
+  .mark-card, .lede, .aside { display: none; }
+  .eyebrow { font-size: 0.65rem; margin-bottom: 4px; }
+  h1 { font-size: clamp(1.5rem, 6.4vw, 2.2rem); margin: 0; }
+}
+
 @media (max-width: 560px) {
   .bars, .send { display: none; }
   .hud-top { gap: 12px; font-size: 0.72rem; }
+  .logo { font-size: 1.4rem; }
   .hud-bottom { justify-content: flex-start; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .dot, .cursor, .screen.power-on .output { animation: none !important; }
+  .dot, .cursor, .screen.power-on .output, .mark-bars i, .mark-sweep { animation: none !important; }
 }
