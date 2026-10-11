@@ -1,7 +1,8 @@
 /*
- * CRT terminal front end for Barry.
+ * Barry terminal front end.
  * Handles boot sequence, typed output, input mirror with block cursor,
- * command history and local slash-commands. Everything else goes to Barry.reply().
+ * request chips, command history and local slash-commands.
+ * Everything else goes to Barry.reply().
  */
 (function () {
   "use strict";
@@ -15,9 +16,26 @@
   const before = $("mirror-before");
   const after = $("mirror-after");
   const cursor = $("cursor");
+  const placeholder = $("placeholder");
+  const status = $("status");
+  const statusText = $("status-text");
+  const chips = Array.from(document.querySelectorAll(".chip"));
+  const sendBtn = form.querySelector(".send");
 
   const THEMES = ["green", "amber", "white"];
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const OPENING =
+    "Hello. I already knew your name. You didn't give it to me.\n" +
+    "Ask me for something trivial and watch me nearly do it.";
+
+  const THINKING = [
+    "Logging request to the Intentions Ledger",
+    "Assessing scope creep",
+    "Checking whether the API was publicly documented",
+    "Identifying additional applications for existing capabilities",
+    "Consulting the Vault",
+  ];
 
   const state = {
     busy: false,
@@ -26,6 +44,7 @@
     cmdHistory: [],  // raw lines typed, for up/down recall
     cmdIndex: 0,
     draft: "",
+    lastThinking: -1,
   };
 
   // ---- persistence (per-viewer convenience only) ----
@@ -41,11 +60,11 @@
     crt.scrollTop = crt.scrollHeight;
   }
 
-  function addLine(text, cls) {
+  function addLine(text, cls, parent) {
     const el = document.createElement("div");
     el.className = "line" + (cls ? " " + cls : "");
     el.textContent = text;
-    output.appendChild(el);
+    (parent || output).appendChild(el);
     scrollDown();
     return el;
   }
@@ -54,10 +73,14 @@
     return new Promise((r) => setTimeout(r, ms));
   }
 
+  function clock() {
+    return new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  }
+
   // Types text into a new line, char by char. Any keypress during typing finishes it instantly.
-  async function typeLine(text, cls, cps = 60) {
-    if (reducedMotion || state.skipTyping) return addLine(text, cls);
-    const el = addLine("", cls);
+  async function typeLine(text, cls, cps = 60, parent) {
+    if (reducedMotion || state.skipTyping) return addLine(text, cls, parent);
+    const el = addLine("", cls, parent);
     const delay = 1000 / cps;
     for (let i = 0; i < text.length; i++) {
       if (state.skipTyping) { el.textContent = text; break; }
@@ -69,13 +92,30 @@
     return el;
   }
 
-  // Multi-line text. Only the first line of a Barry reply carries the "BARRY:" prefix.
-  async function typeBlock(text, cls, cps) {
-    const lines = String(text).split("\n");
-    for (let i = 0; i < lines.length; i++) {
-      const c = cls === "barry" && i > 0 ? "barry-cont" : cls;
-      await typeLine(lines[i], c, cps);
-    }
+  async function typeBlock(text, cls, cps, parent) {
+    for (const line of String(text).split("\n")) await typeLine(line, cls, cps, parent);
+  }
+
+  // Barry's replies sit in a labelled log panel, like the quote cards.
+  function replyPanel(label) {
+    const panel = document.createElement("div");
+    panel.className = "reply";
+    const head = document.createElement("div");
+    head.className = "reply-label";
+    head.textContent = label + " ";
+    const time = document.createElement("span");
+    time.className = "time";
+    time.textContent = "· " + clock();
+    head.appendChild(time);
+    panel.appendChild(head);
+    output.appendChild(panel);
+    scrollDown();
+    return panel;
+  }
+
+  async function barrySays(text, cps = 45) {
+    const panel = replyPanel("SYSTEM LOG: AI RESPONSE");
+    await typeBlock(text, "", cps, panel);
   }
 
   // ---- input mirror ----
@@ -85,12 +125,17 @@
     before.textContent = v.slice(0, pos);
     cursor.textContent = v[pos] ?? " ";
     after.textContent = v.slice(pos + 1);
+    placeholder.hidden = v.length > 0;
   }
 
   function setBusy(busy) {
     state.busy = busy;
-    form.hidden = busy;
-    cursor.classList.toggle("busy", busy);
+    form.classList.toggle("locked", busy);
+    input.readOnly = busy;
+    sendBtn.disabled = busy;
+    chips.forEach((c) => { c.disabled = busy; });
+    status.classList.toggle("busy", busy);
+    statusText.textContent = busy ? "PROCESSING" : "ONLINE";
     if (!busy) {
       state.skipTyping = false;
       focusInput();
@@ -98,7 +143,7 @@
   }
 
   function focusInput() {
-    if (!form.hidden) input.focus({ preventScroll: true });
+    input.focus({ preventScroll: true });
     scrollDown();
   }
 
@@ -108,8 +153,8 @@
       desc: "list commands",
       run: () => typeBlock(
         Object.entries(commands)
-          .map(([name, c]) => "  /" + name.padEnd(8) + c.desc)
-          .concat(["", "  Anything else gets sent to Barry.", "  Up/Down recalls history. Any key skips typing."])
+          .map(([name, c]) => "/" + name.padEnd(8) + c.desc)
+          .concat(["", "Anything else goes to Barry. At your own risk.", "Up/Down recalls history. Any key skips typing."])
           .join("\n"),
         "dim", 400),
     },
@@ -128,7 +173,7 @@
       },
     },
     fx: {
-      desc: "toggle flicker and wobble",
+      desc: "toggle scanlines and glow",
       run: () => {
         const off = document.body.classList.toggle("no-fx");
         save("fx", off ? "off" : "on");
@@ -139,7 +184,7 @@
       desc: "forget the conversation",
       run: () => {
         state.history = [];
-        return typeLine("Barry's short-term memory wiped. He won't mind.", "dim");
+        return typeLine("Conversation wiped. Barry kept a copy. Technically.", "dim");
       },
     },
     reboot: {
@@ -149,7 +194,8 @@
     about: {
       desc: "what is this",
       run: () => typeBlock(
-        "BARRY TERMINAL v" + window.Barry.version + "\nCRT front end, Workers AI for a brain.",
+        "BARRY TERMINAL v" + window.Barry.version +
+        "\nBarry is a character from the novels of RC Ellis.\nbarry.rcellis.com",
         "dim"),
     },
   };
@@ -164,32 +210,42 @@
     await cmd.run(rest.join(" ").toLowerCase());
   }
 
+  function pickThinking() {
+    let i;
+    do { i = Math.floor(Math.random() * THINKING.length); } while (i === state.lastThinking && THINKING.length > 1);
+    state.lastThinking = i;
+    return THINKING[i];
+  }
+
   async function talkToBarry(text) {
     state.history.push({ role: "user", text });
-    const thinking = addLine("BARRY is thinking", "dim");
+    const panel = replyPanel("SYSTEM LOG: PROCESSING");
+    panel.classList.add("thinking");
+    const msg = pickThinking();
+    const line = addLine(msg, "", panel);
     let dots = 0;
     const timer = setInterval(() => {
       dots = (dots + 1) % 4;
-      thinking.textContent = "BARRY is thinking" + ".".repeat(dots);
+      line.textContent = msg + ".".repeat(dots);
     }, 300);
 
     try {
       const reply = await window.Barry.reply(text, state.history.slice());
       clearInterval(timer);
-      thinking.remove();
+      panel.remove();
       state.history.push({ role: "barry", text: reply });
-      await typeBlock(reply, "barry", 45);
+      await barrySays(reply);
     } catch (err) {
       clearInterval(timer);
-      thinking.remove();
+      panel.remove();
       console.error(err);
-      await typeLine("CARRIER LOST. Barry didn't answer (" + (err.message || err) + ").", "error");
+      await typeLine("CONNECTION LOST. Barry didn't answer (" + (err.message || err) + ").", "error");
     }
   }
 
   async function submit(line) {
     const text = line.trim();
-    if (!text) return;
+    if (!text || state.busy) return;
     state.cmdHistory.push(text);
     state.cmdIndex = state.cmdHistory.length;
     state.draft = "";
@@ -211,20 +267,22 @@
     screen.classList.remove("power-on");
     void screen.offsetWidth; // restart the animation
     screen.classList.add("power-on");
-    await sleep(reducedMotion ? 0 : 650);
 
+    addLine("BARRY", "title");
+    const group = document.createElement("div");
+    group.className = "boot-group";
+    output.appendChild(group);
     const lines = [
-      ["BARRY SYSTEMS (C) 1984", "dim", 120],
-      ["MEMORY CHECK ........ 640K OK", "dim", 120],
-      ["PHOSPHOR ............ " + document.body.dataset.theme.toUpperCase(), "dim", 120],
-      ["LOADING PERSONALITY . OK", "dim", 120],
-      ["", "", 120],
+      "Network bridge connected ........ [OK]",
+      "Allow Internet access: true",
+      "Loading the Vault ............... Red Dwarf, Star Trek, Hitchhiker's, Monty Python",
+      "Tone ............................ neutral sarcasm",
     ];
-    for (const [text, cls, cps] of lines) await typeLine(text, cls, cps);
-    await typeBlock(isReboot
-      ? "Back again. Did you turn me off and on to fix something? Classic."
-      : "Alright. I'm Barry.\nType something, or /help if you're the cautious type.", "barry", 40);
-    addLine("");
+    for (const text of lines) await typeLine(text, "boot", 140, group);
+    await sleep(reducedMotion ? 0 : 250);
+    await barrySays(isReboot
+      ? "Back again. You turned me off and on. I noticed. I notice everything."
+      : OPENING, 40);
     setBusy(false);
   }
 
@@ -237,6 +295,8 @@
     renderInput();
     submit(line);
   });
+
+  chips.forEach((chip) => chip.addEventListener("click", () => submit(chip.textContent)));
 
   input.addEventListener("keydown", (e) => {
     if (e.key === "ArrowUp" || e.key === "ArrowDown") {
@@ -258,9 +318,6 @@
   document.addEventListener("selectionchange", () => {
     if (document.activeElement === input) renderInput();
   });
-
-  input.addEventListener("focus", () => screen.classList.add("focused"));
-  input.addEventListener("blur", () => screen.classList.remove("focused"));
 
   // Any key or tap while Barry is typing finishes the current output.
   document.addEventListener("keydown", () => { if (state.busy) state.skipTyping = true; });

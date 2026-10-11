@@ -1,6 +1,7 @@
 # Barry
 
-An interactive chat character that lives in a retro CRT terminal.
+Barry, the AI from the novels of RC Ellis, in a chat terminal styled after the
+Barry quote cards. His voice follows the Barry Lite content pack.
 
 Runs entirely on Cloudflare: the terminal is served as Workers Static Assets,
 and Barry's brain is **Workers AI** (`@cf/meta/llama-3.3-70b-instruct-fp8-fast`
@@ -73,6 +74,7 @@ is needed and nothing is billed.
 ## Terminal commands
 
 `/help`, `/clear`, `/theme [green|amber|white]`, `/fx`, `/reset`, `/reboot`, `/about`.
+The buttons above the input send the book's trivial requests (timer, joke, weather, milk, keys).
 Up/Down recalls previous lines, Ctrl+L clears, any key or tap skips typing.
 
 Theme and effects choices are saved in `localStorage`. `prefers-reduced-motion`

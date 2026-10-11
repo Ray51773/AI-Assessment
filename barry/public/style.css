@@ -1,29 +1,39 @@
-/* Barry CRT terminal. Phosphor colours are theme tokens; effects live on .fx layers. */
+/* Barry terminal. HUD frame after the Barry quote cards: black field, thin
+   mint linework with corner brackets, cyan system labels, mono type.
+   Layout: one column. Header strip, framed log, input dock, footer. */
 
 :root {
-  --bg: #050805;
-  --bezel: #1a1b18;
-  --bezel-edge: #2b2c27;
-  --phosphor: #33ff66;
-  --phosphor-dim: #1c9c3e;
-  --glow: rgba(51, 255, 102, 0.55);
-  --screen-bg: #031207;
-  --font: "VT323", "Courier New", ui-monospace, monospace;
-  --size: clamp(18px, 2.4vw, 24px);
+  color-scheme: dark;
+  --bg: #030605;
+  --panel: #06100b;
+  --line: #24563a;
+  --line-bright: #3f8f60;
+  --phosphor: #a8f0b8;        /* Barry's voice */
+  --phosphor-dim: #6aa57c;    /* user, captions */
+  --glow: rgba(120, 240, 160, 0.28);
+  --accent: #29c4e3;          /* system labels, focus */
+  --accent-dim: #1a7d93;
+  --warn: #e3c629;
+  --font: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --font-pixel: "VT323", "JetBrains Mono", ui-monospace, monospace;
+  --size: clamp(14px, 1.5vw, 16px);
+  --radius: 2px;
 }
 
 body[data-theme="amber"] {
-  --phosphor: #ffb000;
-  --phosphor-dim: #a87400;
-  --glow: rgba(255, 176, 0, 0.5);
-  --screen-bg: #140c02;
+  --phosphor: #ffcf6b;
+  --phosphor-dim: #b98b3a;
+  --glow: rgba(255, 190, 80, 0.25);
+  --line: #5a4320;
+  --line-bright: #9a7232;
 }
 
 body[data-theme="white"] {
-  --phosphor: #e6f0ff;
-  --phosphor-dim: #8a96a8;
-  --glow: rgba(200, 220, 255, 0.45);
-  --screen-bg: #0a0d12;
+  --phosphor: #e8eef5;
+  --phosphor-dim: #8d97a3;
+  --glow: rgba(210, 225, 245, 0.2);
+  --line: #39424d;
+  --line-bright: #66727f;
 }
 
 * { box-sizing: border-box; }
@@ -35,68 +45,177 @@ html, body {
   color: var(--phosphor);
   font-family: var(--font);
   font-size: var(--size);
-  line-height: 1.25;
+  line-height: 1.55;
 }
 
-.bezel {
+body {
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(rgba(63, 143, 96, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(63, 143, 96, 0.06) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+.shell {
   height: 100%;
-  padding: clamp(16px, 3vw, 36px);
-  padding-bottom: calc(clamp(16px, 3vw, 36px) + 22px);
-  background: radial-gradient(ellipse at top, var(--bezel-edge), var(--bezel) 70%);
-  position: relative;
+  max-width: 960px;
+  margin: 0 auto;
+  padding-inline: max(16px, 3vw);
+  padding-block: 16px 12px;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  gap: 12px;
 }
 
-.badge {
-  position: absolute;
-  bottom: 8px;
-  left: 0;
-  right: 0;
-  text-align: center;
-  font-size: 14px;
-  letter-spacing: 0.3em;
-  color: #6d6e66;
+/* ---- header strip ---- */
+.hud-top {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line-bright);
+  font-size: 0.8rem;
+  letter-spacing: 0.14em;
+  color: var(--phosphor);
 }
+.brand { font-weight: 500; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.slash { color: var(--accent); }
+.status { display: inline-flex; align-items: center; gap: 8px; color: var(--phosphor-dim); }
+.dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--phosphor);
+  box-shadow: 0 0 8px var(--glow);
+  animation: pulse 2.4s ease-in-out infinite;
+}
+.status.busy .dot { background: var(--accent); animation-duration: 0.8s; }
+.bars { display: inline-flex; gap: 3px; align-items: end; }
+.bars i { width: 3px; height: 11px; background: var(--phosphor); opacity: 0.85; }
 
+/* ---- framed log ---- */
 .screen {
   position: relative;
-  height: 100%;
-  border-radius: 28px / 22px;
-  background: radial-gradient(ellipse at center, color-mix(in srgb, var(--screen-bg) 80%, var(--phosphor) 6%), var(--screen-bg) 75%);
-  box-shadow:
-    inset 0 0 60px rgba(0, 0, 0, 0.9),
-    inset 0 0 12px rgba(0, 0, 0, 0.8),
-    0 0 0 3px #0c0c0a,
-    0 0 40px rgba(0, 0, 0, 0.6);
-  overflow: hidden;
+  min-height: 0;
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(6, 16, 11, 0.9), rgba(3, 6, 5, 0.9));
   cursor: text;
 }
+.tick { position: absolute; width: 14px; height: 14px; border: 0 solid var(--line-bright); pointer-events: none; }
+.tick.tl { top: -1px; left: -1px; border-top-width: 2px; border-left-width: 2px; }
+.tick.tr { top: -1px; right: -1px; border-top-width: 2px; border-right-width: 2px; }
+.tick.bl { bottom: -1px; left: -1px; border-bottom-width: 2px; border-left-width: 2px; }
+.tick.br { bottom: -1px; right: -1px; border-bottom-width: 2px; border-right-width: 2px; }
 
 .crt-content {
   position: absolute;
   inset: 0;
-  padding: clamp(14px, 3vw, 32px);
+  padding: clamp(14px, 2.5vw, 28px);
   overflow-y: auto;
-  scrollbar-width: none;
-  text-shadow: 0 0 2px var(--phosphor), 0 0 8px var(--glow);
-  animation: wobble 6s infinite steps(1);
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
 }
-.crt-content::-webkit-scrollbar { display: none; }
 
-.output { white-space: pre-wrap; word-break: break-word; }
-.line { min-height: 1.25em; }
-.line.dim { color: var(--phosphor-dim); }
-.line.user { color: var(--phosphor-dim); }
-.line.user::before { content: "> "; }
-.line.barry::before { content: "BARRY: "; }
-.line.barry-cont { padding-left: 7ch; }
-.line.error { animation: blink-err 0.25s 3; }
+.output {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 72ch;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.line { min-height: 1.2em; }
+.line.dim { color: var(--phosphor-dim); font-size: 0.85rem; }
+.line.boot { color: var(--phosphor-dim); font-size: 0.8rem; letter-spacing: 0.04em; }
+.boot-group { display: flex; flex-direction: column; gap: 2px; }
+.line.title {
+  font-family: var(--font-pixel);
+  font-size: clamp(2rem, 6vw, 3rem);
+  line-height: 1;
+  color: var(--phosphor);
+  text-shadow: 0 0 14px var(--glow);
+  letter-spacing: 0.02em;
+}
+.line.user {
+  color: var(--phosphor-dim);
+  align-self: flex-end;
+  max-width: 85%;
+  padding: 6px 12px;
+  border-right: 2px solid var(--line-bright);
+  text-align: right;
+}
+.line.user::before { content: "> "; color: var(--accent-dim); }
+.line.error {
+  color: var(--warn);
+  border-left: 2px solid var(--warn);
+  padding-left: 12px;
+  font-size: 0.9rem;
+}
+
+/* Barry's replies: the quote card's "SYSTEM LOG: AI RESPONSE" panel. */
+.reply {
+  position: relative;
+  border: 1px solid var(--accent-dim);
+  padding: 22px 16px 14px;
+  margin-top: 6px;
+  color: var(--phosphor);
+  text-shadow: 0 0 6px var(--glow);
+}
+.reply-label {
+  position: absolute;
+  top: -0.75em;
+  left: 12px;
+  padding: 0 8px;
+  background: var(--bg);
+  color: var(--accent);
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-shadow: none;
+}
+.reply-label .time { color: var(--accent-dim); }
+.reply .line + .line { margin-top: 2px; }
+.reply.thinking { border-style: dashed; color: var(--phosphor-dim); text-shadow: none; }
+
+/* ---- dock: chips + input ---- */
+.dock { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+
+.chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+.chips::-webkit-scrollbar { display: none; }
+.chip {
+  flex: none;
+  font: inherit;
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  color: var(--phosphor-dim);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.chip:hover { color: var(--phosphor); border-color: var(--line-bright); background: var(--panel); }
+.chip:focus-visible, .send:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
+.chip:disabled { opacity: 0.4; cursor: default; }
 
 .prompt-line {
   display: flex;
-  gap: 0.5em;
+  align-items: center;
+  gap: 10px;
   margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--line-bright);
+  background: var(--panel);
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
-.prompt-line[hidden] { display: none; }
+.prompt-line:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(41, 196, 227, 0.12); }
+.prompt-line.locked { opacity: 0.55; }
+.prompt-label { color: var(--accent); font-weight: 700; }
 
 .input-wrap { position: relative; flex: 1; min-width: 0; }
 
@@ -115,68 +234,75 @@ html, body {
   padding: 0;
   opacity: 0.01;
 }
-
-.input-mirror { white-space: pre-wrap; word-break: break-all; }
+.input-mirror { white-space: pre-wrap; word-break: break-all; min-height: 1.55em; }
+.placeholder { color: var(--phosphor-dim); opacity: 0.6; }
+.placeholder[hidden] { display: none; }
 
 .cursor {
   display: inline-block;
   width: 0.6em;
   background: var(--phosphor);
+  color: var(--bg);
   box-shadow: 0 0 8px var(--glow);
-  animation: blink 1s steps(1) infinite;
+  animation: blink 1.05s steps(1) infinite;
 }
-.cursor.busy { animation: blink 0.3s steps(1) infinite; }
-.screen:not(.focused) .cursor { background: transparent; outline: 1px solid var(--phosphor); }
+.prompt-line:not(:focus-within) .cursor { background: transparent; outline: 1px solid var(--phosphor-dim); color: inherit; }
+.prompt-line.locked .cursor { animation: blink 0.3s steps(1) infinite; }
 
-/* ---- CRT effect layers ---- */
+.send {
+  flex: none;
+  font: inherit;
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  background: transparent;
+  border: 1px solid var(--accent-dim);
+  border-radius: var(--radius);
+  padding: 4px 10px;
+  cursor: pointer;
+}
+.send:hover { background: rgba(41, 196, 227, 0.1); }
+.send:disabled { opacity: 0.4; cursor: default; }
+
+/* ---- footer ---- */
+.hud-bottom {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  justify-content: space-between;
+  padding-top: 10px;
+  border-top: 1px dashed var(--line);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  color: var(--phosphor-dim);
+}
+.hud-bottom a { color: var(--phosphor-dim); text-decoration-color: var(--line-bright); text-underline-offset: 3px; }
+.hud-bottom a:hover { color: var(--phosphor); }
+.hud-bottom .warn { letter-spacing: 0.14em; }
+
+/* ---- effects ---- */
 .fx { position: absolute; inset: 0; pointer-events: none; }
-
 .scanlines {
-  background: repeating-linear-gradient(
-    to bottom,
-    rgba(0, 0, 0, 0) 0,
-    rgba(0, 0, 0, 0) 2px,
-    rgba(0, 0, 0, 0.28) 3px,
-    rgba(0, 0, 0, 0) 4px
-  );
-  mix-blend-mode: multiply;
+  background: repeating-linear-gradient(to bottom, transparent 0 2px, rgba(0, 0, 0, 0.18) 3px, transparent 4px);
 }
+body.no-fx .scanlines { display: none; }
+body.no-fx .reply, body.no-fx .line.title { text-shadow: none; }
 
-.vignette {
-  background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.65) 100%);
-}
-
-.flicker {
-  background: var(--phosphor);
-  opacity: 0;
-  animation: flicker 0.12s infinite;
-  mix-blend-mode: overlay;
-}
-
-body.no-fx .fx.flicker,
-body.no-fx .crt-content { animation: none; }
-body.no-fx .scanlines { opacity: 0.4; }
-
-.screen.power-on .crt-content { animation: power-on 0.6s ease-out; }
+.screen.power-on .output { animation: power-on 0.5s ease-out; }
 
 @keyframes blink { 50% { opacity: 0; } }
-@keyframes blink-err { 50% { opacity: 0.2; } }
-@keyframes flicker {
-  0% { opacity: 0.02; }
-  50% { opacity: 0.04; }
-  100% { opacity: 0.025; }
-}
-@keyframes wobble {
-  0%, 96% { transform: none; }
-  97% { transform: translateX(1px) skewX(0.3deg); }
-  98% { transform: translateX(-1px); }
-}
+@keyframes pulse { 50% { opacity: 0.35; } }
 @keyframes power-on {
-  0% { transform: scale(1, 0.005); filter: brightness(4); }
-  40% { transform: scale(1, 0.01); filter: brightness(3); }
-  100% { transform: scale(1, 1); filter: brightness(1); }
+  from { opacity: 0; transform: translateY(6px); filter: brightness(2); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+
+@media (max-width: 560px) {
+  .bars, .send { display: none; }
+  .hud-top { gap: 12px; font-size: 0.72rem; }
+  .hud-bottom { justify-content: flex-start; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .crt-content, .flicker, .cursor, .screen.power-on .crt-content { animation: none !important; }
+  .dot, .cursor, .screen.power-on .output { animation: none !important; }
 }
