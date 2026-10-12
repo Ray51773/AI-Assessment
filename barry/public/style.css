@@ -171,13 +171,16 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.04em;
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: clamp(7rem, 15vw, 12rem);
+  font-size: clamp(6.5rem, 13vw, 10.5rem);
   line-height: 1;
-  padding-bottom: 56px;
+  /* Ink sits above the baseline, so lift the word to centre the letter
+     between the top labels and the binary caption. */
+  padding-bottom: 92px;
 }
+/* b and dot share one baseline, so the dot sits on the same line as the b's bowl. */
+.mark-word { display: inline-block; white-space: nowrap; }
 /* Scanline fill: the letter is drawn in horizontal bars, like the screen it lives on. */
 .mark-b {
   letter-spacing: -0.04em;
@@ -188,10 +191,11 @@ body {
   filter: drop-shadow(0 0 14px var(--glow)) drop-shadow(0 0 2px var(--phosphor));
 }
 .mark-dot {
-  width: 0.2em;
-  height: 0.2em;
-  align-self: flex-end;
-  margin-bottom: 0.18em;
+  display: inline-block;
+  width: 0.19em;
+  height: 0.19em;
+  margin-left: 0.05em;
+  vertical-align: baseline;
   background: repeating-linear-gradient(to bottom, var(--accent) 0 3px, transparent 3px 5px);
   filter: drop-shadow(0 0 10px rgba(41, 196, 227, 0.6));
 }
