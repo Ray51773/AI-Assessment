@@ -24,6 +24,21 @@ they use your account's Workers AI allowance.
 Opening `public/index.html` directly, or hosting `public/` anywhere without
 the Worker, still works: Barry drops into **offline mode** with canned lines.
 
+## No command line: paste into the Cloudflare dashboard
+
+`dist/` holds two ready-made files (rebuild them with `npm run bundle` after
+changing anything in `public/` or `src/`):
+
+- **`dist/worker.js`**: the whole app in one file, page and Workers AI brain.
+  1. Cloudflare dashboard > Workers & Pages > Create > Create Worker, name it
+     `barry`, Deploy.
+  2. Edit code, replace everything with the contents of `dist/worker.js`, Deploy.
+  3. The Worker's Settings > Bindings > Add > Workers AI, variable name `AI`.
+  4. Open `https://barry.<your-subdomain>.workers.dev`.
+- **`dist/index.html`**: the page on its own. Upload it to Cloudflare Pages (or
+  anywhere) and Barry runs on scripted lines only, since a static page can't
+  reach Workers AI.
+
 ## Configuration
 
 In `wrangler.jsonc` under `vars`:

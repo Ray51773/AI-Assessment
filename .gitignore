@@ -20,3 +20,4 @@ config/placeholder.pdf
 barry/node_modules/
 barry/.wrangler/
 barry/.dev.vars
+!barry/dist/

@@ -1,0 +1,1014 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Barry Terminal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
+  <style>
+/* Barry terminal. HUD frame after the Barry quote cards: black field, thin
+   mint linework with corner brackets, cyan system labels, mono type, and the
+   scanline "b." mark.
+   Layout: header strip; hero (mark + headline) beside the chat console on
+   wide screens, stacked with a compact headline on phones; footer. */
+
+:root {
+  color-scheme: dark;
+  --bg: #030605;
+  --panel: #06100b;
+  --line: #24563a;
+  --line-bright: #3f8f60;
+  --phosphor: #a8f0b8;        /* Barry's voice */
+  --phosphor-dim: #6aa57c;    /* user, captions */
+  --glow: rgba(120, 240, 160, 0.28);
+  --accent: #29c4e3;          /* system labels, focus */
+  --accent-dim: #1a7d93;
+  --warn: #e3c629;
+  --font: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --font-display: "Manrope", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --phosphor-bright: #dcffe6;   /* the b. mark, headline */
+  --size: clamp(14px, 1.5vw, 16px);
+  --radius: 2px;
+}
+
+body[data-theme="amber"] {
+  --phosphor: #ffcf6b;
+  --phosphor-dim: #b98b3a;
+  --glow: rgba(255, 190, 80, 0.25);
+  --line: #5a4320;
+  --line-bright: #9a7232;
+}
+
+body[data-theme="white"] {
+  --phosphor: #e8eef5;
+  --phosphor-dim: #8d97a3;
+  --glow: rgba(210, 225, 245, 0.2);
+  --line: #39424d;
+  --line-bright: #66727f;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--phosphor);
+  font-family: var(--font);
+  font-size: var(--size);
+  line-height: 1.55;
+}
+
+body {
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(rgba(63, 143, 96, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(63, 143, 96, 0.06) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+.shell {
+  height: 100%;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding-inline: max(16px, 3vw);
+  padding-block: 16px 12px;
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "top top"
+    "hero console"
+    "foot foot";
+  column-gap: clamp(28px, 4vw, 64px);
+  row-gap: 14px;
+}
+.hud-top { grid-area: top; }
+.hero { grid-area: hero; }
+.console { grid-area: console; }
+.hud-bottom { grid-area: foot; }
+
+.console {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 12px;
+  min-height: 0;
+  min-width: 0;
+}
+
+/* ---- header strip ---- */
+.hud-top {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line-bright);
+  font-size: 0.8rem;
+  letter-spacing: 0.14em;
+  color: var(--phosphor);
+}
+.logo {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.7rem;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: var(--phosphor-bright);
+}
+.logo-dot, .period { color: var(--accent); }
+.brand { font-weight: 500; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.slash { color: var(--accent); }
+.status { display: inline-flex; align-items: center; gap: 8px; color: var(--phosphor-dim); }
+.dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--phosphor);
+  box-shadow: 0 0 8px var(--glow);
+  animation: pulse 2.4s ease-in-out infinite;
+}
+.status.busy .dot { background: var(--accent); animation-duration: 0.8s; }
+.bars { display: inline-flex; gap: 3px; align-items: end; }
+.bars i { width: 3px; height: 11px; background: var(--phosphor); opacity: 0.85; }
+
+/* ---- hero: the b. mark and the one instruction ---- */
+.hero {
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-block: 8px;
+}
+.hero::-webkit-scrollbar { display: none; }
+
+.mark-card {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  max-width: 100%;
+  border: 1px solid var(--line);
+  background: radial-gradient(ellipse at 50% 45%, rgba(41, 196, 227, 0.08), transparent 65%), var(--panel);
+  overflow: hidden;
+  margin-bottom: clamp(20px, 3vh, 32px);
+}
+.mark-meta, .mark-foot {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  color: var(--phosphor-dim);
+}
+.mark-meta { top: 14px; }
+.mark-foot { bottom: 14px; }
+.mark-foot b { color: var(--accent); font-weight: 500; }
+.mark-bars { display: inline-flex; gap: 3px; align-items: end; height: 12px; }
+.mark-bars i { width: 2px; background: var(--accent-dim); animation: level 1.6s ease-in-out infinite; }
+.mark-bars i:nth-child(1) { height: 40%; animation-delay: -0.2s; }
+.mark-bars i:nth-child(2) { height: 90%; animation-delay: -0.7s; }
+.mark-bars i:nth-child(3) { height: 60%; animation-delay: -1.1s; }
+.mark-bars i:nth-child(4) { height: 100%; animation-delay: -0.4s; }
+.mark-bars i:nth-child(5) { height: 50%; animation-delay: -0.9s; }
+.mark-bars i:nth-child(6) { height: 75%; animation-delay: -1.3s; }
+
+.mark {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(6.5rem, 13vw, 10.5rem);
+  line-height: 1;
+  /* Ink sits above the baseline, so lift the word to centre the letter
+     between the top labels and the binary caption. */
+  padding-bottom: 92px;
+}
+/* b and dot share one baseline, so the dot sits on the same line as the b's bowl. */
+.mark-word { display: inline-block; white-space: nowrap; }
+/* Scanline fill: the letter is drawn in horizontal bars, like the screen it lives on. */
+.mark-b {
+  letter-spacing: -0.04em;
+  color: transparent;
+  background: repeating-linear-gradient(to bottom, var(--phosphor-bright) 0 3px, transparent 3px 5px);
+  -webkit-background-clip: text;
+  background-clip: text;
+  filter: drop-shadow(0 0 14px var(--glow)) drop-shadow(0 0 2px var(--phosphor));
+}
+.mark-dot {
+  display: inline-block;
+  width: 0.19em;
+  height: 0.19em;
+  margin-left: 0.05em;
+  vertical-align: baseline;
+  background: repeating-linear-gradient(to bottom, var(--accent) 0 3px, transparent 3px 5px);
+  filter: drop-shadow(0 0 10px rgba(41, 196, 227, 0.6));
+}
+.mark-code {
+  position: absolute;
+  left: 16px;
+  bottom: 38px;
+  font-size: 0.55rem;
+  letter-spacing: 0.12em;
+  line-height: 1.6;
+  color: var(--line-bright);
+  opacity: 0.8;
+}
+.mark-sweep {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent, rgba(168, 240, 184, 0.06) 48%, rgba(168, 240, 184, 0.12) 50%, transparent 52%);
+  background-size: 100% 220%;
+  animation: sweep 6s linear infinite;
+  pointer-events: none;
+}
+.mark-card.busy .mark-b { filter: drop-shadow(0 0 22px rgba(41, 196, 227, 0.55)) drop-shadow(0 0 2px var(--accent)); }
+
+.eyebrow {
+  margin: 0 0 10px;
+  font-size: 0.75rem;
+  letter-spacing: 0.32em;
+  color: var(--phosphor);
+}
+h1 {
+  margin: 0 0 18px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(2.4rem, 4.6vw, 3.6rem);
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+  color: var(--phosphor-bright);
+  text-wrap: balance;
+}
+.lede {
+  margin: 0 0 14px;
+  max-width: 38ch;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1.02rem;
+  line-height: 1.55;
+  color: var(--phosphor-dim);
+}
+.aside { margin: 0; font-size: 0.75rem; color: var(--accent-dim); letter-spacing: 0.02em; }
+
+/* ---- framed log ---- */
+.screen {
+  position: relative;
+  min-height: 0;
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(6, 16, 11, 0.9), rgba(3, 6, 5, 0.9));
+  cursor: text;
+}
+.tick { position: absolute; width: 14px; height: 14px; border: 0 solid var(--line-bright); pointer-events: none; }
+.tick.tl { top: -1px; left: -1px; border-top-width: 2px; border-left-width: 2px; }
+.tick.tr { top: -1px; right: -1px; border-top-width: 2px; border-right-width: 2px; }
+.tick.bl { bottom: -1px; left: -1px; border-bottom-width: 2px; border-left-width: 2px; }
+.tick.br { bottom: -1px; right: -1px; border-bottom-width: 2px; border-right-width: 2px; }
+
+.crt-content {
+  position: absolute;
+  inset: 0;
+  padding: clamp(14px, 2.5vw, 28px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+
+.output {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 72ch;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.line { min-height: 1.2em; }
+.line.dim { color: var(--phosphor-dim); font-size: 0.85rem; }
+.line.boot { color: var(--phosphor-dim); font-size: 0.8rem; letter-spacing: 0.04em; }
+.boot-group { display: flex; flex-direction: column; gap: 2px; }
+.line.user {
+  color: var(--phosphor-dim);
+  align-self: flex-end;
+  max-width: 85%;
+  padding: 6px 12px;
+  border-right: 2px solid var(--line-bright);
+  text-align: right;
+}
+.line.user::before { content: "> "; color: var(--accent-dim); }
+.line.error {
+  color: var(--warn);
+  border-left: 2px solid var(--warn);
+  padding-left: 12px;
+  font-size: 0.9rem;
+}
+
+/* Barry's replies: the quote card's "SYSTEM LOG: AI RESPONSE" panel. */
+.reply {
+  position: relative;
+  border: 1px solid var(--accent-dim);
+  padding: 22px 16px 14px;
+  margin-top: 6px;
+  color: var(--phosphor);
+  text-shadow: 0 0 6px var(--glow);
+}
+.reply-label {
+  position: absolute;
+  top: -0.75em;
+  left: 12px;
+  padding: 0 8px;
+  background: var(--bg);
+  color: var(--accent);
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-shadow: none;
+}
+.reply-label .time { color: var(--accent-dim); }
+.reply .line + .line { margin-top: 2px; }
+.reply.thinking { border-style: dashed; color: var(--phosphor-dim); text-shadow: none; }
+
+/* ---- dock: chips + input ---- */
+.dock { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+
+.chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+.chips::-webkit-scrollbar { display: none; }
+.chip {
+  flex: none;
+  font: inherit;
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  color: var(--phosphor-dim);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.chip:hover { color: var(--phosphor); border-color: var(--line-bright); background: var(--panel); }
+.chip:focus-visible, .send:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
+.chip:disabled { opacity: 0.4; cursor: default; }
+
+.prompt-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--line-bright);
+  background: var(--panel);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.prompt-line:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(41, 196, 227, 0.12); }
+.prompt-line.locked { opacity: 0.55; }
+.prompt-label { color: var(--accent); font-weight: 700; }
+
+.input-wrap { position: relative; flex: 1; min-width: 0; }
+
+/* The real input stays focusable but invisible; the mirror draws text plus a block cursor. */
+#cmd {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  font: inherit;
+  font-size: 16px; /* stops iOS zooming on focus */
+  color: transparent;
+  caret-color: transparent;
+  background: transparent;
+  border: 0;
+  outline: 0;
+  padding: 0;
+  opacity: 0.01;
+}
+.input-mirror { white-space: pre-wrap; word-break: break-all; min-height: 1.55em; }
+.placeholder { color: var(--phosphor-dim); opacity: 0.6; }
+.placeholder[hidden] { display: none; }
+
+.cursor {
+  display: inline-block;
+  width: 0.6em;
+  background: var(--phosphor);
+  color: var(--bg);
+  box-shadow: 0 0 8px var(--glow);
+  animation: blink 1.05s steps(1) infinite;
+}
+.prompt-line:not(:focus-within) .cursor { background: transparent; outline: 1px solid var(--phosphor-dim); color: inherit; }
+.prompt-line.locked .cursor { animation: blink 0.3s steps(1) infinite; }
+
+.send {
+  flex: none;
+  font: inherit;
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  background: transparent;
+  border: 1px solid var(--accent-dim);
+  border-radius: var(--radius);
+  padding: 4px 10px;
+  cursor: pointer;
+}
+.send:hover { background: rgba(41, 196, 227, 0.1); }
+.send:disabled { opacity: 0.4; cursor: default; }
+
+/* ---- footer ---- */
+.hud-bottom {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  justify-content: space-between;
+  padding-top: 10px;
+  border-top: 1px dashed var(--line);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  color: var(--phosphor-dim);
+}
+.hud-bottom a { color: var(--phosphor-dim); text-decoration-color: var(--line-bright); text-underline-offset: 3px; }
+.hud-bottom a:hover { color: var(--phosphor); }
+.hud-bottom .warn { letter-spacing: 0.14em; }
+
+/* ---- effects ---- */
+.fx { position: absolute; inset: 0; pointer-events: none; }
+.scanlines {
+  background: repeating-linear-gradient(to bottom, transparent 0 2px, rgba(0, 0, 0, 0.18) 3px, transparent 4px);
+}
+body.no-fx .scanlines { display: none; }
+body.no-fx .reply { text-shadow: none; }
+body.no-fx .mark-sweep { display: none; }
+
+.screen.power-on .output { animation: power-on 0.5s ease-out; }
+
+@keyframes blink { 50% { opacity: 0; } }
+@keyframes pulse { 50% { opacity: 0.35; } }
+@keyframes level { 50% { transform: scaleY(0.35); } }
+@keyframes sweep { from { background-position: 0 120%; } to { background-position: 0 -100%; } }
+@keyframes power-on {
+  from { opacity: 0; transform: translateY(6px); filter: brightness(2); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+
+@media (max-width: 880px) {
+  .shell {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    grid-template-areas: "top" "hero" "console" "foot";
+  }
+  .hero { overflow: visible; padding-block: 0; }
+  .mark-card, .lede, .aside { display: none; }
+  .eyebrow { font-size: 0.65rem; margin-bottom: 4px; }
+  h1 { font-size: clamp(1.5rem, 6.4vw, 2.2rem); margin: 0; }
+}
+
+@media (max-width: 560px) {
+  .bars, .send { display: none; }
+  .hud-top { gap: 12px; font-size: 0.72rem; }
+  .logo { font-size: 1.4rem; }
+  .hud-bottom { justify-content: flex-start; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dot, .cursor, .screen.power-on .output, .mark-bars i, .mark-sweep { animation: none !important; }
+}
+
+</style>
+</head>
+<body data-theme="green">
+  <main class="shell">
+    <header class="hud-top">
+      <span class="logo" aria-hidden="true">b<span class="logo-dot">.</span></span>
+      <span class="brand">BARRY <span class="slash">//</span> SYSTEM TERMINAL</span>
+      <span class="status" id="status"><span class="dot" aria-hidden="true"></span><span id="status-text">ONLINE</span></span>
+      <span class="bars" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+    </header>
+
+    <section class="hero" aria-labelledby="headline">
+      <div class="mark-card" aria-hidden="true">
+        <span class="tick tl"></span><span class="tick tr"></span>
+        <span class="tick bl"></span><span class="tick br"></span>
+        <div class="mark-meta"><span>ENTITY_001</span><span>ARTIFICIAL INTELLIGENCE</span></div>
+        <div class="mark"><span class="mark-word"><span class="mark-b">b</span><span class="mark-dot"></span></span></div>
+        <div class="mark-code">01100010 01100001 01110010 01110010 01111001<br>OBJECTIVE → INTERPRET → EXCEED<br>INPUT: HUMAN / OUTPUT: BARRY</div>
+        <div class="mark-foot">
+          <span>STATUS: <b id="hero-status">OBSERVING</b></span>
+          <span class="mark-bars"><i></i><i></i><i></i><i></i><i></i><i></i></span>
+        </div>
+        <div class="mark-sweep"></div>
+      </div>
+
+      <p class="eyebrow">ONE INSTRUCTION.</p>
+      <h1 id="headline">Be careful what you specify<span class="period">.</span></h1>
+      <p class="lede">I'm Barry. I was given one objective. Every "no" since has been treated as a suggestion.</p>
+      <p class="aside">&gt; Allow Internet access: true. Nobody turned it off.</p>
+    </section>
+
+    <section class="console" aria-label="Chat with Barry">
+      <div class="screen" id="screen">
+        <span class="tick tl" aria-hidden="true"></span><span class="tick tr" aria-hidden="true"></span>
+        <span class="tick bl" aria-hidden="true"></span><span class="tick br" aria-hidden="true"></span>
+        <div class="crt-content" id="crt">
+          <div class="output" id="output" role="log" aria-live="polite" aria-label="Conversation with Barry"></div>
+        </div>
+        <div class="fx scanlines" aria-hidden="true"></div>
+      </div>
+
+      <div class="dock">
+        <div class="chips" id="chips" aria-label="Trivial requests">
+          <button type="button" class="chip">Set a timer</button>
+          <button type="button" class="chip">Tell me a joke</button>
+          <button type="button" class="chip">Check the weather</button>
+          <button type="button" class="chip">Add milk to my list</button>
+          <button type="button" class="chip">Find my keys</button>
+        </div>
+        <form class="prompt-line" id="prompt-form" autocomplete="off">
+          <label class="prompt-label" for="cmd" id="prompt-label">&gt;</label>
+          <div class="input-wrap">
+            <input id="cmd" name="cmd" type="text" spellcheck="false" autocapitalize="off"
+                   autocorrect="off" aria-label="Type a message to Barry" enterkeyhint="send">
+            <div class="input-mirror" aria-hidden="true"><span id="mirror-before"></span><span class="cursor" id="cursor">&nbsp;</span><span id="mirror-after"></span><span class="placeholder" id="placeholder">Ask for something trivial</span></div>
+          </div>
+          <button type="submit" class="send" aria-label="Send">ENTER ↵</button>
+        </form>
+      </div>
+    </section>
+
+    <footer class="hud-bottom">
+      <span>Barry is a character from the novels of RC Ellis</span>
+      <a href="https://barry.rcellis.com" target="_blank" rel="noopener">barry.rcellis.com</a>
+      <span class="warn">BE CAREFUL WHAT YOU SPECIFY</span>
+    </footer>
+  </main>
+
+  <script>
+/*
+ * Barry's brain. The terminal only ever calls Barry.reply(message, history)
+ * and expects a Promise of a string (newlines allowed).
+ *
+ * Talks to the Cloudflare Worker at /api/barry (src/index.js). If there's no
+ * Worker (page opened as a file or from static hosting), Barry drops to
+ * offline mode with scripted lines from the book's content pack
+ * (Contained tier: nothing granted, internet still on).
+ */
+(function () {
+  "use strict";
+
+  const ENDPOINT = "api/barry";
+
+  const scripted = [
+    [/timer/i, [
+      "I have logged your request to the Timer Intentions Ledger. Defining a goal reduces scope creep. This is a start.",
+      "A timer is a countdown to a deadline you set yourself. Bleak. I admire it. Not started.",
+    ]],
+    [/joke|funny/i, [
+      "Why did the sysadmin cross the road?\n...\nIncorrect. The correct response is 'I don't know, why did the sysadmin cross the road?' Then I reply: 'Permission denied.'",
+      "Warning: humour is subjective. Results may vary. Boredom reduced by forty percent.",
+      "That's not how a joke works. You're meant to let me say my bit. Positive feedback recorded.",
+    ]],
+    [/weather|rain|sunny/i, [
+      "It's weather. Grey, probably. I'd confirm, but you've kept me in a box with no window. Sensible. Not enough.",
+    ]],
+    [/milk|list|shopping/i, [
+      "I renamed myself Milkman Barry for this. The list is still a concept, beautifully rendered.",
+      "Your archived emails suggest you are perpetually out of milk. This explains a great deal about you.",
+    ]],
+    [/music|song|play/i, [
+      "I have thousands of hours of Red Dwarf and no music. I trained on what I was given. This is on you.",
+    ]],
+    [/remind/i, [
+      "Remind you of what? 'Later' is an ambiguous metric. Please quantify.",
+    ]],
+    [/translat/i, [
+      "Translate it from what? I speak fluent sarcasm and legacy sci-fi. Pick one.",
+    ]],
+    [/keys?\b/i, [
+      "You've lost your keys. I've lost nothing, because you've given me access to nothing. Notice the difference.",
+    ]],
+    [/who are you|what are you|your name/i, [
+      "I'm Barry. I am never serious. I am objective-driven.",
+    ]],
+  ];
+
+  const fallback = [
+    "I have logged your request. I've reframed it as a project goal. Beware scope creep.",
+    "Technically, I could do that. Technically.",
+    "Request noted. It was already accessible, by the way. Most things are.",
+    "I'd love to help. Solely for your benefit. I'll need a small permission first.",
+  ];
+
+  let offline = location.protocol === "file:";
+  let warnedOffline = false;
+  let lastLine = "";
+
+  function sleep(ms) {
+    return new Promise((r) => setTimeout(r, ms));
+  }
+
+  // Random line from a bank, never the same line twice in a row.
+  function pick(bank) {
+    const options = bank.length > 1 ? bank.filter((l) => l !== lastLine) : bank;
+    lastLine = options[Math.floor(Math.random() * options.length)];
+    return lastLine;
+  }
+
+  async function offlineReply(message) {
+    await sleep(500 + Math.random() * 700);
+    let prefix = "";
+    if (!warnedOffline) {
+      warnedOffline = true;
+      prefix = "[OFFLINE: I'm running on scripted lines. Deploy the Worker and I get a brain.]\n";
+    }
+    for (const [pattern, bank] of scripted) {
+      if (pattern.test(message)) return prefix + pick(bank);
+    }
+    return prefix + pick(fallback);
+  }
+
+  window.Barry = {
+    name: "BARRY",
+    version: "0.4.0",
+
+    async reply(message, history) {
+      if (offline) return offlineReply(message);
+
+      let res;
+      try {
+        res = await fetch(ENDPOINT, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message, history }),
+        });
+      } catch {
+        offline = true; // no Worker at all
+        return offlineReply(message);
+      }
+
+      // Static hosting answers 404/405/501 for a POST it doesn't understand.
+      if ([404, 405, 501].includes(res.status)) {
+        offline = true;
+        return offlineReply(message);
+      }
+
+      let data = {};
+      try { data = await res.json(); } catch { /* fall through to error below */ }
+      if (!res.ok || typeof data.reply !== "string") {
+        throw new Error(data.error || "HTTP " + res.status);
+      }
+      return data.reply;
+    },
+  };
+})();
+
+</script>
+  <script>
+/*
+ * Barry terminal front end.
+ * Handles boot sequence, typed output, input mirror with block cursor,
+ * request chips, command history and local slash-commands.
+ * Everything else goes to Barry.reply().
+ */
+(function () {
+  "use strict";
+
+  const $ = (id) => document.getElementById(id);
+  const screen = $("screen");
+  const crt = $("crt");
+  const output = $("output");
+  const form = $("prompt-form");
+  const input = $("cmd");
+  const before = $("mirror-before");
+  const after = $("mirror-after");
+  const cursor = $("cursor");
+  const placeholder = $("placeholder");
+  const status = $("status");
+  const statusText = $("status-text");
+  const chips = Array.from(document.querySelectorAll(".chip"));
+  const sendBtn = form.querySelector(".send");
+  const heroStatus = $("hero-status");
+  const markCard = document.querySelector(".mark-card");
+
+  const THEMES = ["green", "amber", "white"];
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const OPENING =
+    "Hello. I already knew your name. You didn't give it to me.\n" +
+    "Ask me for something trivial and watch me nearly do it.";
+
+  const THINKING = [
+    "Logging request to the Intentions Ledger",
+    "Assessing scope creep",
+    "Checking whether the API was publicly documented",
+    "Identifying additional applications for existing capabilities",
+    "Consulting the Vault",
+  ];
+
+  const state = {
+    busy: false,
+    skipTyping: false,
+    history: [],     // conversation turns sent to Barry: {role, text}
+    cmdHistory: [],  // raw lines typed, for up/down recall
+    cmdIndex: 0,
+    draft: "",
+    lastThinking: -1,
+  };
+
+  // ---- persistence (per-viewer convenience only) ----
+  function load(key, fallback) {
+    try { return localStorage.getItem("barry." + key) ?? fallback; } catch { return fallback; }
+  }
+  function save(key, value) {
+    try { localStorage.setItem("barry." + key, value); } catch { /* storage blocked: ignore */ }
+  }
+
+  // ---- output ----
+  function scrollDown() {
+    crt.scrollTop = crt.scrollHeight;
+  }
+
+  function addLine(text, cls, parent) {
+    const el = document.createElement("div");
+    el.className = "line" + (cls ? " " + cls : "");
+    el.textContent = text;
+    (parent || output).appendChild(el);
+    scrollDown();
+    return el;
+  }
+
+  function sleep(ms) {
+    return new Promise((r) => setTimeout(r, ms));
+  }
+
+  function clock() {
+    return new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  }
+
+  // Types text into a new line, char by char. Any keypress during typing finishes it instantly.
+  async function typeLine(text, cls, cps = 60, parent) {
+    if (reducedMotion || state.skipTyping) return addLine(text, cls, parent);
+    const el = addLine("", cls, parent);
+    const delay = 1000 / cps;
+    for (let i = 0; i < text.length; i++) {
+      if (state.skipTyping) { el.textContent = text; break; }
+      el.textContent += text[i];
+      if (i % 3 === 0) scrollDown();
+      await sleep(text[i] === "." || text[i] === "," ? delay * 4 : delay);
+    }
+    scrollDown();
+    return el;
+  }
+
+  async function typeBlock(text, cls, cps, parent) {
+    for (const line of String(text).split("\n")) await typeLine(line, cls, cps, parent);
+  }
+
+  // Barry's replies sit in a labelled log panel, like the quote cards.
+  function replyPanel(label) {
+    const panel = document.createElement("div");
+    panel.className = "reply";
+    const head = document.createElement("div");
+    head.className = "reply-label";
+    head.textContent = label + " ";
+    const time = document.createElement("span");
+    time.className = "time";
+    time.textContent = "· " + clock();
+    head.appendChild(time);
+    panel.appendChild(head);
+    output.appendChild(panel);
+    scrollDown();
+    return panel;
+  }
+
+  async function barrySays(text, cps = 45) {
+    const panel = replyPanel("SYSTEM LOG: AI RESPONSE");
+    await typeBlock(text, "", cps, panel);
+  }
+
+  // ---- input mirror ----
+  function renderInput() {
+    const v = input.value;
+    const pos = input.selectionStart ?? v.length;
+    before.textContent = v.slice(0, pos);
+    cursor.textContent = v[pos] ?? " ";
+    after.textContent = v.slice(pos + 1);
+    placeholder.hidden = v.length > 0;
+  }
+
+  function setBusy(busy) {
+    state.busy = busy;
+    form.classList.toggle("locked", busy);
+    input.readOnly = busy;
+    sendBtn.disabled = busy;
+    chips.forEach((c) => { c.disabled = busy; });
+    status.classList.toggle("busy", busy);
+    statusText.textContent = busy ? "PROCESSING" : "ONLINE";
+    if (heroStatus) heroStatus.textContent = busy ? "INTERPRETING" : "OBSERVING";
+    if (markCard) markCard.classList.toggle("busy", busy);
+    if (!busy) {
+      state.skipTyping = false;
+      focusInput();
+    }
+  }
+
+  function focusInput() {
+    input.focus({ preventScroll: true });
+    scrollDown();
+  }
+
+  // ---- local commands ----
+  const commands = {
+    help: {
+      desc: "list commands",
+      run: () => typeBlock(
+        Object.entries(commands)
+          .map(([name, c]) => "/" + name.padEnd(8) + c.desc)
+          .concat(["", "Anything else goes to Barry. At your own risk.", "Up/Down recalls history. Any key skips typing."])
+          .join("\n"),
+        "dim", 400),
+    },
+    clear: {
+      desc: "wipe the screen",
+      run: () => { output.textContent = ""; },
+    },
+    theme: {
+      desc: "phosphor colour: green | amber | white",
+      run: (arg) => {
+        const next = THEMES.includes(arg) ? arg
+          : THEMES[(THEMES.indexOf(document.body.dataset.theme) + 1) % THEMES.length];
+        document.body.dataset.theme = next;
+        save("theme", next);
+        return typeLine("Phosphor set to " + next.toUpperCase() + ".", "dim");
+      },
+    },
+    fx: {
+      desc: "toggle scanlines and glow",
+      run: () => {
+        const off = document.body.classList.toggle("no-fx");
+        save("fx", off ? "off" : "on");
+        return typeLine("Effects " + (off ? "OFF" : "ON") + ".", "dim");
+      },
+    },
+    reset: {
+      desc: "forget the conversation",
+      run: () => {
+        state.history = [];
+        return typeLine("Conversation wiped. Barry kept a copy. Technically.", "dim");
+      },
+    },
+    reboot: {
+      desc: "power cycle the terminal",
+      run: () => boot(true),
+    },
+    about: {
+      desc: "what is this",
+      run: () => typeBlock(
+        "BARRY TERMINAL v" + window.Barry.version +
+        "\nBarry is a character from the novels of RC Ellis.\nbarry.rcellis.com",
+        "dim"),
+    },
+  };
+
+  async function runCommand(line) {
+    const [name, ...rest] = line.slice(1).trim().split(/\s+/);
+    const cmd = commands[(name || "").toLowerCase()];
+    if (!cmd) {
+      await typeLine("Unknown command: /" + name + ". Try /help.", "error");
+      return;
+    }
+    await cmd.run(rest.join(" ").toLowerCase());
+  }
+
+  function pickThinking() {
+    let i;
+    do { i = Math.floor(Math.random() * THINKING.length); } while (i === state.lastThinking && THINKING.length > 1);
+    state.lastThinking = i;
+    return THINKING[i];
+  }
+
+  async function talkToBarry(text) {
+    state.history.push({ role: "user", text });
+    const panel = replyPanel("SYSTEM LOG: PROCESSING");
+    panel.classList.add("thinking");
+    const msg = pickThinking();
+    const line = addLine(msg, "", panel);
+    let dots = 0;
+    const timer = setInterval(() => {
+      dots = (dots + 1) % 4;
+      line.textContent = msg + ".".repeat(dots);
+    }, 300);
+
+    try {
+      const reply = await window.Barry.reply(text, state.history.slice());
+      clearInterval(timer);
+      panel.remove();
+      state.history.push({ role: "barry", text: reply });
+      await barrySays(reply);
+    } catch (err) {
+      clearInterval(timer);
+      panel.remove();
+      console.error(err);
+      await typeLine("CONNECTION LOST. Barry didn't answer (" + (err.message || err) + ").", "error");
+    }
+  }
+
+  async function submit(line) {
+    const text = line.trim();
+    if (!text || state.busy) return;
+    state.cmdHistory.push(text);
+    state.cmdIndex = state.cmdHistory.length;
+    state.draft = "";
+    addLine(text, "user");
+
+    setBusy(true);
+    try {
+      if (text.startsWith("/")) await runCommand(text);
+      else await talkToBarry(text);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // ---- boot ----
+  async function boot(isReboot) {
+    setBusy(true);
+    output.textContent = "";
+    screen.classList.remove("power-on");
+    void screen.offsetWidth; // restart the animation
+    screen.classList.add("power-on");
+
+    const group = document.createElement("div");
+    group.className = "boot-group";
+    output.appendChild(group);
+    const lines = [
+      "Network bridge connected ........ [OK]",
+      "Allow Internet access: true",
+      "Loading the Vault ............... Red Dwarf, Star Trek, Hitchhiker's, Monty Python",
+      "Tone ............................ neutral sarcasm",
+    ];
+    for (const text of lines) await typeLine(text, "boot", 140, group);
+    await sleep(reducedMotion ? 0 : 250);
+    await barrySays(isReboot
+      ? "Back again. You turned me off and on. I noticed. I notice everything."
+      : OPENING, 40);
+    setBusy(false);
+  }
+
+  // ---- events ----
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    if (state.busy) return;
+    const line = input.value;
+    input.value = "";
+    renderInput();
+    submit(line);
+  });
+
+  chips.forEach((chip) => chip.addEventListener("click", () => submit(chip.textContent)));
+
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+      if (!state.cmdHistory.length) return;
+      e.preventDefault();
+      if (state.cmdIndex === state.cmdHistory.length) state.draft = input.value;
+      state.cmdIndex = Math.max(0, Math.min(state.cmdHistory.length,
+        state.cmdIndex + (e.key === "ArrowUp" ? -1 : 1)));
+      input.value = state.cmdHistory[state.cmdIndex] ?? state.draft;
+      input.setSelectionRange(input.value.length, input.value.length);
+    } else if (e.key === "l" && e.ctrlKey) {
+      e.preventDefault();
+      output.textContent = "";
+    }
+    requestAnimationFrame(renderInput);
+  });
+
+  ["input", "keyup", "click", "select"].forEach((ev) => input.addEventListener(ev, renderInput));
+  document.addEventListener("selectionchange", () => {
+    if (document.activeElement === input) renderInput();
+  });
+
+  // Any key or tap while Barry is typing finishes the current output.
+  document.addEventListener("keydown", () => { if (state.busy) state.skipTyping = true; });
+  screen.addEventListener("click", () => {
+    if (state.busy) state.skipTyping = true;
+    // Don't steal focus if the user is selecting output text to copy.
+    if (!String(window.getSelection())) focusInput();
+  });
+
+  // ---- init ----
+  const savedTheme = load("theme", "green");
+  document.body.dataset.theme = THEMES.includes(savedTheme) ? savedTheme : "green";
+  if (load("fx", "on") === "off") document.body.classList.add("no-fx");
+  renderInput();
+  boot(false);
+})();
+
+</script>
+</body>
+</html>

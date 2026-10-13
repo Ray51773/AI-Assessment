@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "test": "node --test"
+    "test": "node --test",
+    "bundle": "node scripts/bundle.mjs"
   },
   "devDependencies": {
     "wrangler": "^4.0.0"
